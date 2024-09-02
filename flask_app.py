@@ -14,7 +14,7 @@ print(type(ip))
 client = MilvusClient(uri=str("http://"+ip+":19530"))
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
-model_directory = "/root/Infer-KMS/google-flan-t5-trained-model"
+model_directory = "/app/model"
 tokenizer = T5Tokenizer.from_pretrained(model_directory)
 model = T5ForConditionalGeneration.from_pretrained(model_directory)
 def classify_query(query):
