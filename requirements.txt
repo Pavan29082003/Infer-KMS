@@ -1,8 +1,11 @@
 docx==0.2.4
-langchain==0.2.14
+Flask==3.0.3
+Flask_Cors==4.0.1
+huggingface_hub==0.24.6
+langchain==0.2.15
 langchain_huggingface==0.0.3
 pymilvus==2.4.5
+Requests==2.32.3
 sentence_transformers==3.0.1
-streamlit==1.37.1
-streamlit_autorefresh==1.0.1
+sentencepiece==0.2.0
 transformers==4.44.2
