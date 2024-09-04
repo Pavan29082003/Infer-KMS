@@ -82,8 +82,7 @@ def answer_query(id,question):
     )
 
     chat_session = model.start_chat(
-    history=[],
-    stream = True
+    history=[]
     )
     print(chat_session)
     response = chat_session.send_message(prompt)
@@ -106,14 +105,16 @@ def extract_section(articles):
             for match in matches:
                 section = match.group('section')
                 content = match.group('content').strip()
-                data[section] = content if section not in content else ""            
-            temp['TITLE'] = data.get("TITLE")
-            temp['INTRODUCTION'] = data.get("INTRODUCTION")
-            temp['METHODS'] = data.get("METHODS")                                                                       
-            temp['RESULTS'] = data.get("RESULTS")
-            temp['CONCLUSION'] = data.get("CONCLUSION")
-            temp['KEYWORDS'] = data.get("KEYWORDS")
-            temp['SEARCHTERM'] = data.get("SEARCHTERM")
+                data[section] = content if section not in content else ""    
+            for key in data.keys():
+                temp[key] = data[key]            
+            # temp['TITLE'] = data.get("TITLE")
+            # temp['INTRODUCTION'] = data.get("INTRODUCTION")
+            # temp['METHODS'] = data.get("METHODS")                                                                       
+            # temp['RESULTS'] = data.get("RESULTS")
+            # temp['CONCLUSION'] = data.get("CONCLUSION")
+            # temp['KEYWORDS'] = data.get("KEYWORDS")
+            # temp['SEARCHTERM'] = data.get("SEARCHTERM")
             results.append(temp)        
 
         return results
