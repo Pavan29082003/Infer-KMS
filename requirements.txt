@@ -6,6 +6,6 @@ pymilvus==2.4.5
 Requests==2.32.3
 sentence_transformers==3.0.1
 transformers==4.44.2
-google-ai-generativeai
+google-ai-generativeai==0.7.2
 sentencepiece==0.2.0
 docx==0.2.4
