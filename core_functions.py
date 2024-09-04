@@ -11,7 +11,7 @@ def get_ip():
     ip = requests.get('http://checkip.amazonaws.com').text.strip()
     return ip
 
-ip = get_ip()
+ip = "3.7.248.108"
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
@@ -46,7 +46,7 @@ def get_data(query):
                 )         
             ],
             rerank=RRFRanker(), 
-            limit=10
+            limit=25
         )    
     ids = re.findall(r'id: (\d+)', str(ids[0]))
     articles = client.get(
@@ -99,13 +99,16 @@ def extract_section(articles):
             temp = {}
             temp['PMID'] = article.get('PMID')
             abstract = article.get('TEXT_DATA')
-            pattern = r"(?P<section>[A-Za-z]+):(?P<content>.*?)(?=[A-Za-z]+:|$)"
+            pattern = r"(?P<section>(?!\()[A-Z]+(?<!\))):(?P<content>.*?)(?=[A-Za-z]+:|$)"
             matches = re.finditer(pattern, abstract, re.DOTALL)
             data = {}
             for match in matches:
                 section = match.group('section')
                 content = match.group('content').strip()
-                data[section] = content if section not in content else ""    
+                data[section] = content if section not in content else "" 
+            print(data)    
+            if len(data.keys()) == 1:   
+                temp["ABSTRACT"] = abstract      
             for key in data.keys():
                 temp[key] = data[key]            
             # temp['TITLE'] = data.get("TITLE")
