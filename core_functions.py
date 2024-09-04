@@ -34,7 +34,13 @@ def get_data(query):
                     anns_field='VECTOR_SEARCH_TERM',  
                     param={"metric_action": "L2"}, 
                     limit=50
-                )             
+                ),
+                AnnSearchRequest(
+                    data=[query_embedding[0]],  
+                    anns_field='VECTOR_DATA',  
+                    param={"metric_action": "L2"}, 
+                    limit=50
+                )         
             ],
             rerank=RRFRanker(), 
             limit=10
@@ -44,22 +50,19 @@ def get_data(query):
         collection_name="vector_data_for_all_fields_with_term",
         ids=ids
     )
-    query_type = classify_query(query)
-    if query_type == "question":
-        prompt = ""
-        for article in articles:
-            prompt = prompt + article["TEXT_DATA"]
-        prompt = prompt + query
-        response = {
-            "Answer" : answer_query(prompt)
-        }
-        return response
     response = {
-        "Articles" :extract_section(article)
+        "Articles" :extract_section(articles)
     }
     return response
 
-def answer_query(prompt):
+def answer_query(id,question):
+    article = client.get(
+        collection_name="vector_data_for_all_fields_with_term",
+        ids=[id]
+    )   
+    context = article[0].get('TEXT_DATA') 
+    prompt = ''
+    prompt = context + question
     genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
     generation_config = {
     "temperature": 1,
@@ -72,6 +75,7 @@ def answer_query(prompt):
     model = genai.GenerativeModel(
     model_name="gemini-1.5-pro",
     generation_config=generation_config,
+    system_instruction="You are a research assistant"
     )
 
     chat_session = model.start_chat(
@@ -79,7 +83,9 @@ def answer_query(prompt):
     )
     print(chat_session)
     response = chat_session.send_message(prompt)
-    answer = response.text
+    answer = {
+        "Answer":response.text
+    }
     
     return answer
 

@@ -6,7 +6,7 @@ from transformers import pipeline
 import core_functions
 
 ip = core_functions.get_ip()
-client = MilvusClient(uri="http://" + ip + ":19530")
+client = MilvusClient(uri="http://" + ip + ":1530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
 
@@ -26,5 +26,19 @@ def get_results():
     else:
             response = core_functions.get_data(query)
             return jsonify(response)
+    
+@app.route("/generateanswer",methods=['POST'])
+def get_answer():
+    data_front_end = request.get_json() 
+    question = data_front_end.get('question')
+    pmid = data_front_end.get('pmid')
+
+    if question == "":
+        msg  = {"msg:" : "Please enter a question" }
+        response = jsonify(msg)
+        return response
+    else:
+            response = core_functions.answer_query(pmid,question)
+            return jsonify(response)    
 
 app.run(host='0.0.0.0', port=80)
