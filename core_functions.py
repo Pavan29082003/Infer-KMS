@@ -79,7 +79,8 @@ def answer_query(id,question):
     )
 
     chat_session = model.start_chat(
-    history=[]
+    history=[],
+    stream = True
     )
     print(chat_session)
     response = chat_session.send_message(prompt)

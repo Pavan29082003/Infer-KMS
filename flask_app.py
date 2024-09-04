@@ -6,6 +6,7 @@ from transformers import pipeline
 import core_functions
 
 ip = core_functions.get_ip()
+print(ip)
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
