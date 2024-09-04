@@ -8,7 +8,7 @@ import os
 from pymilvus import connections, MilvusClient,Collection
 
 client = MilvusClient(uri="http://3.109.213.141:19530")
-connections.connect(host="3.109.213.141", port="19530")
+connections.connect(host="3.109.213.141", port="19530",alias="core_functions")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
 
 def get_ip():
