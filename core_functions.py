@@ -6,17 +6,32 @@ from pymilvus import AnnSearchRequest,RRFRanker
 import google.generativeai as genai
 import os
 from pymilvus import connections, MilvusClient,Collection
-
+from google.generativeai import caching
+import datetime
 def get_ip():
     ip = requests.get('http://checkip.amazonaws.com').text.strip()
     return ip
 
-ip = get_ip()
+ip = "15.206.186.58"
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
-
-
+genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
+generation_config = {
+    "temperature": 1,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+    }
+model = genai.GenerativeModel(
+        model_name="gemini-1.5-pro",
+        generation_config=generation_config,
+        system_instruction="You are a research assistant"
+        )
+chat_session = model.start_chat(
+history=[]
+)
 
 def classify_query(query):
     classifier = pipeline("text-classification", model="shahrukhx01/question-vs-statement-classifier")
@@ -58,34 +73,35 @@ def get_data(query):
     }
     return response
 
+# Create a cache with a 5 minute TTL
+# def init_chat_bot(id):
+#     article = client.get(
+#         collection_name="vector_data_for_all_fields_with_term",
+#         ids=[id]
+#     )   
+#     context = article[0].get('TEXT_DATA')     
+#     cache = caching.CachedContent.create(
+#         model='models/gemini-1.5-flash-001',# used to identify the cache
+#         contents=context,
+#         generation_config=generation_config,
+#         system_instruction="You are a research assistant",
+#         ttl=datetime.timedelta(minutes=60),
+#     )
+#     print(cache)
+#     model = genai.GenerativeModel.from_cached_content(cached_content=cache)
+
+
+#     return chat_session
+
 def answer_query(id,question):
     article = client.get(
-        collection_name="vector_data_for_all_fields_with_term",
-        ids=[id]
+    collection_name="vector_data_for_all_fields_with_term",
+    ids=[id]
     )   
-    context = article[0].get('TEXT_DATA') 
-    prompt = ''
+    context = article[0].get('TEXT_DATA')     
     prompt = context + question
-    genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
-    generation_config = {
-    "temperature": 1,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
-
-    model = genai.GenerativeModel(
-    model_name="gemini-1.5-pro",
-    generation_config=generation_config,
-    system_instruction="You are a research assistant"
-    )
-
-    chat_session = model.start_chat(
-    history=[]
-    )
-    print(chat_session)
     response = chat_session.send_message(prompt)
+    print(chat_session)
     answer = {
         "Answer":response.text
     }
@@ -99,7 +115,7 @@ def extract_section(articles):
             temp = {}
             temp['PMID'] = article.get('PMID')
             abstract = article.get('TEXT_DATA')
-            pattern = r"(?P<section>(?!\()[A-Z]+(?<!\))):(?P<content>.*?)(?=[A-Za-z]+:|$)"
+            pattern = r"(?P<section>(?!\()+[A-Z]+(?<!\))):(?P<content>.*?)(?=[A-Za-z]+:|$)"
             matches = re.finditer(pattern, abstract, re.DOTALL)
             data = {}
             for match in matches:
@@ -111,13 +127,7 @@ def extract_section(articles):
                 temp["ABSTRACT"] = abstract      
             for key in data.keys():
                 temp[key] = data[key]            
-            # temp['TITLE'] = data.get("TITLE")
-            # temp['INTRODUCTION'] = data.get("INTRODUCTION")
-            # temp['METHODS'] = data.get("METHODS")                                                                       
-            # temp['RESULTS'] = data.get("RESULTS")
-            # temp['CONCLUSION'] = data.get("CONCLUSION")
-            # temp['KEYWORDS'] = data.get("KEYWORDS")
-            # temp['SEARCHTERM'] = data.get("SEARCHTERM")
+
             results.append(temp)        
 
         return results

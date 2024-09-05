@@ -5,7 +5,7 @@ from flask_cors import CORS
 from transformers import pipeline
 import core_functions
 
-ip = core_functions.get_ip()
+ip = "15.206.186.58"
 print(ip)
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
@@ -39,6 +39,7 @@ def get_answer():
         response = jsonify(msg)
         return response
     else:
+            # chat_session = core_functions.init_chat_bot(pmid)
             response = core_functions.answer_query(pmid,question)
             return jsonify(response)    
 
