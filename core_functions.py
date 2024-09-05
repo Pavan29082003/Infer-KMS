@@ -12,7 +12,7 @@ def get_ip():
     ip = requests.get('http://checkip.amazonaws.com').text.strip()
     return ip
 
-ip = "15.206.186.58"
+ip = get_ip()
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
@@ -73,25 +73,6 @@ def get_data(query):
     }
     return response
 
-# Create a cache with a 5 minute TTL
-# def init_chat_bot(id):
-#     article = client.get(
-#         collection_name="vector_data_for_all_fields_with_term",
-#         ids=[id]
-#     )   
-#     context = article[0].get('TEXT_DATA')     
-#     cache = caching.CachedContent.create(
-#         model='models/gemini-1.5-flash-001',# used to identify the cache
-#         contents=context,
-#         generation_config=generation_config,
-#         system_instruction="You are a research assistant",
-#         ttl=datetime.timedelta(minutes=60),
-#     )
-#     print(cache)
-#     model = genai.GenerativeModel.from_cached_content(cached_content=cache)
-
-
-#     return chat_session
 
 def answer_query(id,question):
     article = client.get(
@@ -115,14 +96,7 @@ def extract_section(articles):
             temp = {}
             temp['PMID'] = article.get('PMID')
             abstract = article.get('TEXT_DATA')
-           # pattern = r"(?P<section>(?!\()[A-Z]+(?<!\))):(?P<content>.*?)(?=[A-Za-z]+:|$)"
-            pattern = r"""(?P<section>
-                    
-                        \b[A-Z][A-Za-z]{3,}:       
-                        )
-                        (?P<content>.*?)           
-                        (?=\b[A-Z][A-Za-z]{3,}:|$)  
-                    """
+            pattern = r"(?P<section>\b[A-Z][A-Za-z]{3,}:)(?P<content>.*?)(?=\b[A-Z][A-Za-z]{3,}:|$)"
             matches = re.finditer(pattern, abstract, re.DOTALL)
             data = {}
             for match in matches:
@@ -130,10 +104,10 @@ def extract_section(articles):
                 content = match.group('content').strip()
                 data[section] = content if section not in content else "" 
             print(data)    
-            if len(data.keys()) == 1:   
-                temp["ABSTRACT"] = abstract      
             for key in data.keys():
-                temp[key] = data[key]            
+              if data[key] != "":
+                temp[key] = data[key]          
+         
 
             results.append(temp)        
 
