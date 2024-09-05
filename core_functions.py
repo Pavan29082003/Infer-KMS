@@ -101,6 +101,7 @@ def extract_section(articles):
             data = {}
             for match in matches:
                 section = match.group('section')
+                section = section.replace(":","")
                 content = match.group('content').strip()
                 data[section] = content if section not in content else "" 
             print(data)    
