@@ -8,3 +8,4 @@ sentence_transformers==3.0.1
 transformers==4.44.2
 sentencepiece==0.2.0
 docx==0.2.4
+Flask-Session==0.8.0
