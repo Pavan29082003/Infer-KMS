@@ -10,7 +10,7 @@ from datetime import timedelta
 import google.generativeai as genai
 from datetime import timedelta
 
-ip = "13.235.71.25"
+ip = core_functions.get_ip()
 print(ip)
 genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
 client = MilvusClient(uri="http://" + ip + ":19530")

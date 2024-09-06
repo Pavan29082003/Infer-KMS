@@ -15,7 +15,7 @@ def get_ip():
     ip = requests.get('http://checkip.amazonaws.com').text.strip()
     return ip
 
-ip = "13.235.71.25"
+ip = get_ip()
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
