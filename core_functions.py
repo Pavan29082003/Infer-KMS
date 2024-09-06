@@ -1,4 +1,5 @@
 import requests
+from flask import *
 import re
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer
@@ -6,32 +7,18 @@ from pymilvus import AnnSearchRequest,RRFRanker
 import google.generativeai as genai
 import os
 from pymilvus import connections, MilvusClient,Collection
-from google.generativeai import caching
-import datetime
+from datetime import timedelta
+
+
+
 def get_ip():
     ip = requests.get('http://checkip.amazonaws.com').text.strip()
     return ip
 
-ip = get_ip()
+ip = "13.235.71.25"
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
-genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
-generation_config = {
-    "temperature": 1,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
-model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config=generation_config,
-        system_instruction="You are a research assistant"
-        )
-chat_session = model.start_chat(
-history=[]
-)
 
 def classify_query(query):
     classifier = pipeline("text-classification", model="shahrukhx01/question-vs-statement-classifier")
@@ -74,20 +61,7 @@ def get_data(query):
     return response
 
 
-def answer_query(id,question):
-    article = client.get(
-    collection_name="vector_data_for_all_fields_with_term",
-    ids=[id]
-    )   
-    context = article[0].get('TEXT_DATA')     
-    prompt = context + question
-    response = chat_session.send_message(prompt)
-    print(chat_session)
-    answer = {
-        "Answer":response.text
-    }
-    
-    return answer
+
 
 
 def extract_section(articles):
@@ -113,4 +87,4 @@ def extract_section(articles):
             results.append(temp)        
 
         return results
- 
+
