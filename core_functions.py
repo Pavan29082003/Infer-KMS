@@ -70,7 +70,7 @@ def extract_section(articles):
             temp = {}
             temp['PMID'] = article.get('PMID')
             abstract = article.get('TEXT_DATA')
-            pattern = r"(?P<section>\b[A-Z][A-Za-z]{3,}:)(?P<content>.*?)(?=\b[A-Z][A-Za-z]{3,}:|$)"
+            pattern = r"(?P<section>\b[A-Z][A-Za-z]{3,}):(?P<content>.*?)(?=\b[A-Z][A-Za-z]{3,}:|$)"
             matches = re.finditer(pattern, abstract, re.DOTALL)
             data = {}
             for match in matches:
@@ -87,4 +87,4 @@ def extract_section(articles):
             results.append(temp)        
 
         return results
-
+ 
