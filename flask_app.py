@@ -26,14 +26,6 @@ def get_results():
             response = core_functions.get_data(query)
             return jsonify(response)
 
-@app.route("/getip",methods=['GET'])
-def get_ip():
-    ip = get_ip
-    response = {
-         "ip" : ip
-    }
-    return jsonify(response)
-
 @app.route("/generateanswer",methods=['POST'])
 def get_answer():
     data_front_end = request.get_json() 
