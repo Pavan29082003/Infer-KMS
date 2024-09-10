@@ -75,9 +75,7 @@ def answer_query(question,pmid,session_id):
     chat_session = model.start_chat(
         history=session[session_id]['history']
     )
-    response = chat_session.send_message(prompt, stream=True)
-    for chunk in response:
-        yield chunk.text
+    response = chat_session.send_message(prompt)
     for i in chat_session.history[-2:]:
           temp = {}
           temp["role"] = i.role
