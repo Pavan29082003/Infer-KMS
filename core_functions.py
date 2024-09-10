@@ -8,11 +8,8 @@ from pymilvus import connections, MilvusClient,Collection
 from datetime import timedelta
 import uuid
 
-def get_ip():
-    ip = requests.get('http://checkip.amazonaws.com').text.strip()
-    return ip
 
-ip = get_ip()
+ip = "13.232.28.221"
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
