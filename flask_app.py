@@ -45,10 +45,9 @@ def get_answer():
                 session_id = core_functions.create_session() 
         response = core_functions.answer_query(question,pmid,session_id)
         
-        if isinstance(response, (list, dict)):
-            return jsonify(response)
-        else:
-            return jsonify(list(response))
+
+
+        return jsonify(response)
           
     
 @app.route("/deletesession",methods=['POST'])
