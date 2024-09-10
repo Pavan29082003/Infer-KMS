@@ -44,8 +44,12 @@ def get_answer():
                 print("No session id")
                 session_id = core_functions.create_session() 
         response = core_functions.answer_query(question,pmid,session_id)
-            
-        return jsonify(response)    
+        
+        if isinstance(response, (list, dict)):
+            return jsonify(response)
+        else:
+            return jsonify(list(response))
+          
     
 @app.route("/deletesession",methods=['POST'])
 def delete_session():
