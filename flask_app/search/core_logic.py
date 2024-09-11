@@ -1,15 +1,13 @@
-import requests
 from flask import *
 import re
 from sentence_transformers import SentenceTransformer
 from pymilvus import AnnSearchRequest,RRFRanker
 import google.generativeai as genai
 from pymilvus import connections, MilvusClient,Collection
-from datetime import timedelta
 import uuid
-
-
-ip = "13.232.28.221"
+import os 
+# from run import
+ip =  os.environ['IP']
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
@@ -72,20 +70,20 @@ def answer_query(question,pmid,session_id):
     chat_session = model.start_chat(
         history=session[session_id]['history']
     )
-    response = chat_session.send_message(prompt)
+    response = chat_session.send_message(prompt,stream=True)
+    for chunk in response:
+        temp = {
+            "session_id" : session_id,
+            "answer" : chunk.text
+        }
+        temp = json.dumps(temp)
+        yield temp.encode("utf-8")
     for i in chat_session.history[-2:]:
           temp = {}
           temp["role"] = i.role
           temp["parts"] = [part.text for part in i.parts]
           session[session_id]['history'].append(temp)
-
-    print(session[session_id]['history'] )
-    response = {
-        "answer":response.text,
-        "session_Id" : session_id
-    }
-    
-    return response
+          
 
 def extract_section(articles):
         results = []

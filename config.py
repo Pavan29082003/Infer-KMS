@@ -4,10 +4,12 @@ class Config:
     GOOGLE_API_KEY = "AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ"
     DEBUG = False
     TESTING = False
+    SECRET_KEY = "d47e2a60-ff60-4b39-9961-72c8b63a9bc9" 
+    IP = "13.127.207.184"
 
 class TestingConfig(Config):
     DEBUG = True
-    IP =  os.getenv('IP_TEST', '')
+    IP =  "13.127.207.184"
     ENV = 'testing'
 
 class DevelopmentConfig(Config):
@@ -16,7 +18,6 @@ class DevelopmentConfig(Config):
     ENV = 'development'
 
 class ProductionConfig(Config):
-    """Production config."""
+    
     DEBUG = False
     ENV = 'production'
-
