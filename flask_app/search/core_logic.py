@@ -12,7 +12,7 @@ client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_for_all_fields_with_term = Collection(name="vector_data_for_all_fields_with_term")
 
-genai.configure(api_key="AIzaSyDPCCwRJyLVLzv4QP7jwu8M9aEC87WrNMQ")
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 generation_config = {
     "temperature": 1,
     "top_p": 0.95,
@@ -23,7 +23,8 @@ generation_config = {
 model = genai.GenerativeModel(
         model_name="gemini-1.5-pro",
         generation_config=generation_config,
-        system_instruction="You are a research assistant"
+        system_instruction="You are a research assistant",
+        safety_settings="BLOCK_NONE"
     )
 
 def get_data(query):
@@ -102,8 +103,8 @@ def extract_section(articles):
             for key in data.keys():
               if data[key] != "":
                 temp[key] = data[key]          
-         
 
+            temp["display"] = section_to_display(temp)
             results.append(temp)        
 
         return results
@@ -115,3 +116,12 @@ def create_session():
     }
 
     return session_id
+
+def section_to_display(article):
+    max_length = 0
+    for section in article:
+        current_length = len(article[section])
+        if current_length > max_length:
+            max_length = current_length
+            largest_section = section
+    return largest_section        
