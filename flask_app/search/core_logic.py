@@ -26,8 +26,6 @@ model = genai.GenerativeModel(
         generation_config=generation_config,
         system_instruction="You are a research assistant",
         safety_settings="BLOCK_NONE",
-        system_instruction="You are a research assistant",
-        safety_settings="BLOCK_NONE"
     )
 
 def get_data(query):
