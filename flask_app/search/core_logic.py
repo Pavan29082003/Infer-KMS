@@ -35,7 +35,7 @@ def get_data(query):
          param={"metric_type": "L2", "params": {}} ,
          data = query_embedding,
          anns_field="vector_data",
-         limit=1000
+         limit=100
         )    
     for hits in res :
         ids = hits.ids
