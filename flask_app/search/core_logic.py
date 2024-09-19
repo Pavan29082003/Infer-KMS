@@ -1,84 +1,58 @@
-publication_categories = {
-    "Books and Documents": [
-        "Address",
-        "Autobiography",
-        "Bibliography",
-        "Biography",
-        "Case Reports",
-        "Classical Article",
-        "Collected Work",
-        "Congress",
-        "Corrected and Republished Article",
-        "Dataset",
-        "Dictionary",
-        "Directory",
-        "Duplicate Publication",
-        "Editorial",
-        "Electronic Supplementary Materials",
-        "English Abstract",
-        "Festschrift",
-        "Government Publication",
-        "Guideline",
-        "Historical Article",
-        "Interview",
-        "Journal Article",
-        "Lecture",
-        "Legal Case",
-        "Legislation",
-        "Letter",
-        "News",
-        "Newspaper Article",
-        "Patient Education Handout",
-        "Periodical Index",
-        "Personal Narrative",
-        "Portrait",
-        "Preprint",
-        "Published Erratum",
-        "Research Support, N.I.H., Extramural",
-        "Research Support, N.I.H., Intramural",
-        "Research Support, Non-U.S. Gov't",
-        "Research Support, U.S. Gov't, Non-P.H.S.",
-        "Research Support, U.S. Gov't, P.H.S.",
-        "Technical Report",
-        "Video-Audio Media",
-        "Webcast"
-    ],
-    "Meta Analysis": [
-        "Meta-Analysis",
-        "Systematic Review"
-    ],
-    "Review": [
-        "Comparative Study",
-        "Comment",
-        "Consensus Development Conference",
-        "Consensus Development Conference, NIH",
-        "Evaluation Study",
-        "Expression of Concern",
-        "Guideline",
-        "Introductory Journal Article",
-        "Multicenter Study",
-        "Observational Study",
-        "Observational Study, Veterinary",
-        "Overall",
-        "Practice Guideline",
-        "Review",
-        "Scientific Integrity Review",
-        "Validation Study"
-    ],
-    "Clinical Trials": [
-        "Adaptive Clinical Trial",
-        "Clinical Study",
-        "Clinical Trial",
-        "Clinical Trial, Phase I",
-        "Clinical Trial, Phase II",
-        "Clinical Trial, Phase III",
-        "Clinical Trial, Phase IV",
-        "Clinical Trial Protocol",
-        "Clinical Trial, Veterinary",
-        "Controlled Clinical Trial",
-        "Equivalence Trial",
-        "Pragmatic Clinical Trial",
-        "Randomized Controlled Trial",
-        "Randomized Controlled Trial, Veterinary"
-    ]
-}
+from flask import *
+from flask import Blueprint
+from flask_app.search import core_logic
+
+search= Blueprint('search', __name__)
+
+@search.route("/query",methods=['POST'])
+def get_results():
+    data_front_end = request.get_json() 
+    query = data_front_end.get('query')
+    if query == "":
+        msg  = {"msg:" : "Please enter a query" }
+        response = jsonify(msg)
+        return response
+    else:
+            response = core_logic.get_data(query)
+            return jsonify(response)
+    
+@search.route("/filter",methods=['POST'])
+def filter_data():
+    data_front_end = request.get_json() 
+    query = data_front_end.get('query')
+    filters = data_front_end.get('filters')
+    response = core_logic.filter_type(query,filters)
+
+    return jsonify(response)    
+
+@search.route("/generateanswer",methods=['POST'])
+def get_answer():
+    data_front_end = request.get_json() 
+    question = data_front_end.get('question')
+    session_id = data_front_end.get('session_id')
+    print(session_id)
+    pmid = data_front_end.get('pmid')
+
+    if question == "":
+        response  = {
+             "msg:" : "Please enter a question" 
+            }
+        return jsonify(response)  
+    else:
+        if session_id == None:
+                print("No session id")
+                session_id = core_logic.create_session() 
+
+        return Response(stream_with_context(core_logic.answer_query(question,pmid,session_id)),content_type="application/json")
+          
+    
+@search.route("/deletesession",methods=['POST'])
+def delete_session():
+    data_front_end = request.get_json() 
+    session_id = data_front_end.get('session_id')
+    del session[session_id]
+    response = {
+         "msg" : "Session deleted successfully"
+    }
+    return jsonify(response)
+
