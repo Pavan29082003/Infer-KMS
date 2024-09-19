@@ -26,6 +26,8 @@ model = genai.GenerativeModel(
         generation_config=generation_config,
         system_instruction="You are a research assistant",
         safety_settings="BLOCK_NONE"
+        system_instruction="You are a research assistant",
+        safety_settings="BLOCK_NONE"
     )
 
 def get_data(query):
@@ -98,6 +100,8 @@ def extract_section(articles):
             for key in data.keys():
               if data[key] != "":
                 temp[key] = data[key]          
+
+            temp["display"] = section_to_display(temp)
 
             temp["display"] = section_to_display(temp)
             results.append(temp)        
