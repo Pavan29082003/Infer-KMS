@@ -59,8 +59,9 @@ def answer_query(question,pmid,session_id):
         article = client.get(
         collection_name="vector_data_pmc",
         ids=[pmid]
-        )   
-        context = article[0].get('TEXT_DATA')
+        )  
+        context = json.dumps(article[0]['body_content']) 
+        context = context
     prompt = context + question
 
     chat_session = model.start_chat(
