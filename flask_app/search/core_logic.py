@@ -25,7 +25,7 @@ model = genai.GenerativeModel(
         model_name="gemini-1.5-pro",
         generation_config=generation_config,
         system_instruction="You are a research assistant",
-        safety_settings="BLOCK_NONE"
+        safety_settings="BLOCK_NONE",
         system_instruction="You are a research assistant",
         safety_settings="BLOCK_NONE"
     )
