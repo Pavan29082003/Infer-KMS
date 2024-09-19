@@ -35,7 +35,7 @@ def get_data(query):
          param={"metric_type": "L2", "params": {}} ,
          data = query_embedding,
          anns_field="vector_data",
-         limit=10
+         limit=1000
         )    
     for hits in res :
         ids = hits.ids
@@ -44,11 +44,9 @@ def get_data(query):
         collection_name="vector_data_pmc",
         ids=ids
     )
-    # print(len(articles))
-    count = 0
+
+
     for article in articles:
-        count = count + 1
-        print(count)
         article.pop('vector_data')
     response = {
         "articles" :articles
@@ -124,12 +122,12 @@ def section_to_display(article):
     return largest_section        
 
 def filter_type(query,filters):
-    print(type(articles))
+    # print(type(articles))
     articles = get_data(query)
     temp = []
-    for article in articles:
+    for article in articles['articles']:
         for publication_type in article['publication_type']:
-            print(articles)
+            # print(articles)
             for filter in filters:
                 if publication_type in publication_categories[filter] and article not in temp:
                     temp.append(article)

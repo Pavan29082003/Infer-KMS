@@ -13,7 +13,7 @@ ip = config_class.IP
 gemini_key = config_class.GOOGLE_API_KEY
 os.environ['GEMINI_API_KEY'] = gemini_key
 os.environ['IP'] = ip
-print(config_class.GOOGLE_API_KEY)
+
 app = create_app()
 
 
