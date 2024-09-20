@@ -37,17 +37,25 @@ def get_data(query):
          anns_field="vector_data",
          limit=100
         )    
+    relavent_articles = []
     for hits in res :
-        ids = hits.ids
-
+        for hit in hits:
+            temp = {}
+            temp['id'] = hit.id
+            temp['score'] = hit.score
+            relavent_articles.append(temp)
+    relavent_articles = sorted(relavent_articles, key=lambda x: x['id'])
+    ids = [article['id'] for article in relavent_articles]
     articles = client.get(
         collection_name="vector_data_pmc",
         ids=ids
     )
-
+    order_lookup = {item['id']: item['score'] for item in relavent_articles}
+    articles = sorted(articles, key=lambda article: order_lookup[article['pmid']])
 
     for article in articles:
         article.pop('vector_data')
+        
     response = {
         "articles" :articles
     }
@@ -125,7 +133,6 @@ def section_to_display(article):
     return largest_section        
 
 def filter_type(query,filters):
-    # print(type(articles))
     articles = get_data(query)
     temp = []
     for article in articles['articles']:
@@ -139,3 +146,24 @@ def filter_type(query,filters):
         "articles" : temp
     }        
     return articles            
+
+
+# def dict_to_list(dictionary):
+#     data = []
+#     for item in dictionary:
+#         temp = {}
+#         # print(dictionary[item])
+#         if isinstance(dictionary[item],dict):
+#             for key,value in dictionary[item].items():
+#                 temp['title'] = key
+#                 if isinstance(value,dict):
+#                     # print(value)
+#                     temp['content'] = dict_to_list(value)
+#                 else:
+#                     temp['content'] = value
+#                 data.append(temp)
+#         else:
+#             temp['title'] = item
+#             temp['content'] = dictionary[item]
+#             data.append(temp)        
+#     return data
