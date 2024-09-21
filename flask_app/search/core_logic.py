@@ -24,7 +24,7 @@ generation_config = {
 model = genai.GenerativeModel(
         model_name="gemini-1.5-pro",
         generation_config=generation_config,
-        system_instruction="You are a research assistant",
+        system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
         safety_settings="BLOCK_NONE",
     )
 
@@ -70,7 +70,7 @@ def answer_query(question,pmid,session_id):
         )  
         context = json.dumps(article[0]['body_content']) 
         context = context
-    prompt = context + question
+    prompt = context +"\n\n" +  question
 
     chat_session = model.start_chat(
         history=session[session_id]['history']
