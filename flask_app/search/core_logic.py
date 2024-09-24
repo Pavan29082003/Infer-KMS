@@ -161,7 +161,7 @@ def annotate(pmids):
         chat_session = model.start_chat()
         response = chat_session.send_message(prompt)
         print(response.text)
-        response = json.loads(response.text.replace("```json","").replace("```",""))
+        response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
         temp[article['pmid']]= response
         data.append(temp)
 
