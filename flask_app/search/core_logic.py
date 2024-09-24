@@ -154,6 +154,7 @@ def annotate(pmids):
     )   
     data = []
     for article in articles:
+        total_count = 0
         temp = {}
         article.pop("vector_data")
         context = json.dumps(article['abstract_content'])  + json.dumps(article['body_content']) 
@@ -162,6 +163,13 @@ def annotate(pmids):
         response = chat_session.send_message(prompt)
         print(response.text)
         response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
+        if len(response) > 0:
+            for i in response:
+                print(i)
+                values = sum(list(response[i].values()))
+                total_count = total_count + values
+            for j in response:
+                response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
         temp[article['pmid']]= response
         data.append(temp)
 
