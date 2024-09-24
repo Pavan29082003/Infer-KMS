@@ -56,3 +56,10 @@ def delete_session():
     }
     return jsonify(response)
 
+
+@search.route("/annotate",methods=['POST'])
+def annotate():
+    data_front_end = request.get_json() 
+    pmid = data_front_end.get('pmid')
+    response = core_logic.annotate(pmid)
+    return jsonify(response)
