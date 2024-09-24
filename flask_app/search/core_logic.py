@@ -148,31 +148,33 @@ def filter_type(query,filters):
     return articles            
 
 def annotate(pmids):
-    articles = client.get(
-        collection_name="vector_data_pmc",
-        ids=pmids
-    )   
-    data = []
-    for article in articles:
-        total_count = 0
-        temp = {}
-        article.pop("vector_data")
-        context = json.dumps(article['abstract_content'])  + json.dumps(article['body_content']) 
-        prompt = context +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
-        chat_session = model.start_chat()
-        response = chat_session.send_message(prompt)
-        print(response.text)
-        response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
-        if len(response) > 0:
-            for i in response:
-                print(i)
-                values = sum(list(response[i].values()))
-                total_count = total_count + values
-            for j in response:
-                response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
-        temp[article['pmid']]= response
-        data.append(temp)
-
+    try:
+        articles = client.get(
+            collection_name="vector_data_pmc",
+            ids=pmids
+        )   
+        data = []
+        for article in articles:
+            total_count = 0
+            temp = {}
+            article.pop("vector_data")
+            context = json.dumps(article['abstract_content'])  + json.dumps(article['body_content']) 
+            prompt = context +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
+            chat_session = model.start_chat()
+            response = chat_session.send_message(prompt)
+            print(response.text)
+            response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
+            if len(response) > 0:
+                for i in response:
+                    print(i)
+                    values = sum(list(response[i].values()))
+                    total_count = total_count + values
+                for j in response:
+                    response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
+            temp[article['pmid']]= response
+            data.append(temp)
+    except:
+        return []
     return data
 
 
