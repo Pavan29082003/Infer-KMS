@@ -7,13 +7,14 @@ from pymilvus import connections, MilvusClient,Collection
 import uuid
 import os
 from flask_app.search.publication_categories import publication_categories 
-
+# from run import
 ip =  os.environ['IP']
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_pmc = Collection(name="vector_data_pmc")
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+
 
 
 def get_data(query):
@@ -59,23 +60,23 @@ def answer_query(question,pmid,session_id):
         context = json.dumps(article[0]['body_content']) 
         context = context
     prompt = context +"\n\n" +  question
-
-    chat_session = model.start_chat(
-        history=session[session_id]['history']
-    )
     generation_config = {
-    "temperature": 0.5,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
+        "temperature": 0.5,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
+        }
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
         generation_config=generation_config,
         system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
         safety_settings="BLOCK_NONE",
     )
+    chat_session = model.start_chat(
+        history=session[session_id]['history']
+    )
+
 
     response = chat_session.send_message(prompt,stream=True)
     for chunk in response:
@@ -154,8 +155,7 @@ def annotate(pmids):
         articles = client.get(
             collection_name="vector_data_pmc",
             ids=pmids
-        )   
-        data = []
+        )  
         generation_config = {
         "temperature": 0,
         "top_p": 0.95,
@@ -166,15 +166,16 @@ def annotate(pmids):
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
             generation_config=generation_config,
-            system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+            # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
             safety_settings="BLOCK_NONE",
         )
+        data = []
         for article in articles:
             total_count = 0
             temp = {}
             context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
             words = context.split(" ")
-            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
+            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }"
             chat_session = model.start_chat()
             response = chat_session.send_message(prompt)
             print(response.text)
