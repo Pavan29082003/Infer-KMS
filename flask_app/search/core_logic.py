@@ -7,26 +7,14 @@ from pymilvus import connections, MilvusClient,Collection
 import uuid
 import os
 from flask_app.search.publication_categories import publication_categories 
-# from run import
+
 ip =  os.environ['IP']
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_pmc = Collection(name="vector_data_pmc")
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-generation_config = {
-    "temperature": 1,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
-model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config=generation_config,
-        system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
-        safety_settings="BLOCK_NONE",
-    )
+
 
 def get_data(query):
     sbert_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
@@ -75,6 +63,20 @@ def answer_query(question,pmid,session_id):
     chat_session = model.start_chat(
         history=session[session_id]['history']
     )
+    generation_config = {
+    "temperature": 0.5,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+    }
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        generation_config=generation_config,
+        system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+        safety_settings="BLOCK_NONE",
+    )
+
     response = chat_session.send_message(prompt,stream=True)
     for chunk in response:
         temp = {
@@ -154,12 +156,25 @@ def annotate(pmids):
             ids=pmids
         )   
         data = []
+        generation_config = {
+        "temperature": 0,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
+        }
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=generation_config,
+            system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+            safety_settings="BLOCK_NONE",
+        )
         for article in articles:
             total_count = 0
             temp = {}
-            article.pop("vector_data")
-            context = json.dumps(article['abstract_content'])  + json.dumps(article['body_content']) 
-            prompt = context +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
+            context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
+            words = context.split(" ")
+            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
             chat_session = model.start_chat()
             response = chat_session.send_message(prompt)
             print(response.text)
@@ -173,7 +188,8 @@ def annotate(pmids):
                     response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
             temp[article['pmid']]= response
             data.append(temp)
-    except:
+    except Exception as e:
+        print(e)
         return []
     return data
 
