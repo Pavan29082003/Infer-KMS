@@ -181,15 +181,22 @@ def annotate(pmids):
             print(response.text)
             response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
             if len(response) > 0:
-                for i in response:
+                for i in response.keys():
                     print(i)
                     values = sum(list(response[i].values()))
                     total_count = total_count + values
-                for j in response:
-                    response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
+                empty_fields = []    
+                for j in response.keys():
+                    if len(response[j]) > 0:
+                        response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
+                    else:
+                        empty_fields.append(j)
+                for k in empty_fields:
+                    del response[k]        
             temp[article['pmid']]= response
             data.append(temp)
     except Exception as e:
+        print("Error:")
         print(e)
         return []
     return data
