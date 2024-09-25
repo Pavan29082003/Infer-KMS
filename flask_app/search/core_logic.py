@@ -175,7 +175,7 @@ def annotate(pmids):
             temp = {}
             context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
             words = context.split(" ")
-            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }"
+            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.Give response only in json format. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }"
             chat_session = model.start_chat()
             response = chat_session.send_message(prompt)
             print(response.text)
