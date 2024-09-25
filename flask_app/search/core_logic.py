@@ -14,19 +14,8 @@ connections.connect(host=ip, port="19530")
 vector_data_pmc = Collection(name="vector_data_pmc")
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-generation_config = {
-    "temperature": 1,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
-model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config=generation_config,
-        system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
-        safety_settings="BLOCK_NONE",
-    )
+
+
 
 def get_data(query):
     sbert_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
@@ -71,10 +60,24 @@ def answer_query(question,pmid,session_id):
         context = json.dumps(article[0]['body_content']) 
         context = context
     prompt = context +"\n\n" +  question
-
+    generation_config = {
+        "temperature": 0.5,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
+        }
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        generation_config=generation_config,
+        system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+        safety_settings="BLOCK_NONE",
+    )
     chat_session = model.start_chat(
         history=session[session_id]['history']
     )
+
+
     response = chat_session.send_message(prompt,stream=True)
     for chunk in response:
         temp = {
@@ -152,28 +155,49 @@ def annotate(pmids):
         articles = client.get(
             collection_name="vector_data_pmc",
             ids=pmids
-        )   
+        )  
+        generation_config = {
+        "temperature": 0,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
+        }
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=generation_config,
+            # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+            safety_settings="BLOCK_NONE",
+        )
         data = []
         for article in articles:
             total_count = 0
             temp = {}
-            article.pop("vector_data")
-            context = json.dumps(article['abstract_content'])  + json.dumps(article['body_content']) 
-            prompt = context +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence'},'protein' : {'word': 'occurence'} }"
+            context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
+            words = context.split(" ")
+            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.If either of them are not present in the article do not inlcude that field in the json. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }"
             chat_session = model.start_chat()
             response = chat_session.send_message(prompt)
             print(response.text)
             response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
             if len(response) > 0:
-                for i in response:
+                for i in response.keys():
                     print(i)
                     values = sum(list(response[i].values()))
                     total_count = total_count + values
-                for j in response:
-                    response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
+                empty_fields = []    
+                for j in response.keys():
+                    if len(response[j]) > 0:
+                        response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
+                    else:
+                        empty_fields.append(j)
+                for k in empty_fields:
+                    del response[k]        
             temp[article['pmid']]= response
             data.append(temp)
-    except:
+    except Exception as e:
+        print("Error:")
+        print(e)
         return []
     return data
 
