@@ -7,7 +7,9 @@ from pymilvus import connections, MilvusClient,Collection
 import uuid
 import os
 from flask_app.search.publication_categories import publication_categories 
-# from run import
+import threading
+from collections import defaultdict
+
 ip =  os.environ['IP']
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
@@ -151,56 +153,81 @@ def filter_type(query,filters):
     return articles            
 
 def annotate(pmids):
-    try:
-        articles = client.get(
-            collection_name="vector_data_pmc",
-            ids=pmids
-        )  
-        generation_config = {
-        "temperature": 0,
-        "top_p": 0.95,
-        "top_k": 64,
-        "max_output_tokens": 8192,
-        "response_mime_type": "text/plain",
-        }
-        model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=generation_config,
-            # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
-            safety_settings="BLOCK_NONE",
-        )
-        data = []
-        for article in articles:
-            total_count = 0
-            temp = {}
-            context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
-            words = context.split(" ")
-            prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.Give response only in json format. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }"
-            chat_session = model.start_chat()
-            response = chat_session.send_message(prompt)
-            print(response.text)
-            response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
-            if len(response) > 0:
-                for i in response.keys():
-                    print(i)
-                    values = sum(list(response[i].values()))
-                    total_count = total_count + values
-                empty_fields = []    
-                for j in response.keys():
-                    if len(response[j]) > 0:
-                        response[j]['annotation_score'] = ( sum(list(response[j].values())) / total_count ) * 100
-                    else:
-                        empty_fields.append(j)
-                for k in empty_fields:
-                    del response[k]        
-            temp[article['pmid']]= response
-            data.append(temp)
-    except Exception as e:
-        print("Error:")
-        print(e)
-        return []
+    articles = client.get(
+        collection_name="vector_data_pmc",
+        ids=pmids
+    )  
+    data = {}
+    for pmid in pmids:
+        data[pmid] = []
+    for article in articles:
+        context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
+        chunk = len(context) // 4
+        article_chunks = [context[i:i+chunk] for i in range(0,len(context),chunk)]
+        threads = []
+        for chunk in article_chunks:
+            thread = threading.Thread(target=annotate_api_gemini, args=(article['pmid'],chunk,data))
+            threads.append(thread)
+            thread.start()
+        for thread in threads:
+            thread.join()
+    for pmid in data.keys():
+        total_count = 0
+        data[pmid] = merge_dict(data[pmid])
+        if len(data[pmid]) > 0:
+            for i in data[pmid].keys():
+                # print(i)
+                values = sum(list(data[pmid][i].values()))
+                total_count = total_count + values
+            empty_fields = []    
+            for j in data[pmid].keys():
+                if len(data[pmid][j]) > 0:
+                    data[pmid][j]['annotation_score'] = ( sum(list(data[pmid][j].values())) / total_count ) * 100
+                else:
+                    empty_fields.append(j)
+            for k in empty_fields:
+                del data[pmid][k]       
     return data
 
+def annotate_api_gemini(pmid,context,data):
+    generation_config = {
+    "temperature": 0,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 8192,
+    "response_mime_type": "text/plain",
+    }
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        generation_config=generation_config,
+        # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+        safety_settings="BLOCK_NONE",
+    )
+    words = context.split(" ")
+    prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.Give response only in json format. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }.Use the keywords 'gene','disesase','gene ontology','celluar','mutation','protein','varaints' for json.If no terms are found related to these categories return an empty json "
+    chat_session = model.start_chat()
+    response = chat_session.send_message(prompt)
+    temp = {}
+    response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
+    data[pmid].append(response)
+    return temp
+
+def merge_dict(data):
+    merged_dict = {}
+    for chunk_response in data:
+        for annotate_type in chunk_response.keys():          
+            if annotate_type not in merged_dict.keys():
+                merged_dict[annotate_type] = chunk_response[annotate_type]
+            else:
+                for k in chunk_response[annotate_type].keys():
+                    flag = False
+                    for v in merged_dict[annotate_type].keys():
+                        flag = True
+                        if k == v:
+                            merged_dict[annotate_type][v] = merged_dict[annotate_type][v] + chunk_response[annotate_type][k]  
+                    if flag == False:
+                        merged_dict[annotate_type][k] = chunk_response[annotate_type][k]  
+    return merged_dict
 
 # def dict_to_list(dictionary):
 #     data = []
