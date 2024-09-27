@@ -190,26 +190,31 @@ def annotate(pmids):
     return data
 
 def annotate_api_gemini(pmid,context,data):
-    generation_config = {
-    "temperature": 0,
-    "top_p": 0.95,
-    "top_k": 64,
-    "max_output_tokens": 8192,
-    "response_mime_type": "text/plain",
-    }
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
-        generation_config=generation_config,
-        # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
-        safety_settings="BLOCK_NONE",
-    )
-    words = context.split(" ")
-    prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.Give response only in json format. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }.Use the keywords 'gene','disesase','gene ontology','celluar','mutation','protein','varaints' for json.If no terms are found related to these categories return an empty json "
-    chat_session = model.start_chat()
-    response = chat_session.send_message(prompt)
-    temp = {}
-    response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
-    data[pmid].append(response)
+    try: 
+        generation_config = {
+        "temperature": 0,
+        "top_p": 0.95,
+        "top_k": 64,
+        "max_output_tokens": 8192,
+        "response_mime_type": "text/plain",
+        }
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=generation_config,
+            # system_instruction="Think yourself as an research assistant.You will receieve data related to life sciences.Analyze it and answer only if a valid question is asked after that",
+            safety_settings="BLOCK_NONE",
+        )
+        words = context.split(" ")
+        prompt = str(words) +"\n\n" +  "Dump all genes, proteins, diseases,gene ontology, mutation,cellular , variants into a json and also give the count of their occurence in the article.Give response only in json format. Format of json : {'gene': {'word': 'occurence_value'},'protein' : {'word': 'occurence_value'} }.Use the keywords 'gene','disesase','gene ontology','celluar','mutation','protein','varaints' for json.If no terms are found related to these categories return an empty json "
+        chat_session = model.start_chat()
+        response = chat_session.send_message(prompt)
+        temp = {}
+        print(response.text)
+        response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
+        data[pmid].append(response)
+    except Exception as e:
+        print(e)
+        print("Response:" + str(response.text))    
     return temp
 
 def merge_dict(data):
