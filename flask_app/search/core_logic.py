@@ -160,6 +160,7 @@ def annotate(pmids):
     data = {}
     for pmid in pmids:
         data[pmid] = []
+    response = []
     for article in articles:
         context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
         chunk = len(context) // 4
@@ -187,7 +188,8 @@ def annotate(pmids):
                     empty_fields.append(j)
             for k in empty_fields:
                 del data[pmid][k]       
-    return data
+        response.append({pmid:data[pmid]})    
+    return response
 
 def annotate_api_gemini(pmid,context,data):
     try: 
