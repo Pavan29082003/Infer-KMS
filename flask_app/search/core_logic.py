@@ -229,11 +229,11 @@ def merge_dict(data):
                 for k in chunk_response[annotate_type].keys():
                     flag = False
                     for v in merged_dict[annotate_type].keys():
-                        flag = True
                         if k == v:
+                            flag = True
                             merged_dict[annotate_type][v] = merged_dict[annotate_type][v] + chunk_response[annotate_type][k]  
                     if flag == False:
-                        merged_dict[annotate_type][k] = chunk_response[annotate_type][k]  
+                        merged_dict[annotate_type][k] = chunk_response[annotate_type][k]
     return merged_dict
 
 # def dict_to_list(dictionary):
