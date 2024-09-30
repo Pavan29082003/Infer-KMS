@@ -63,3 +63,13 @@ def annotate():
     pmid = data_front_end.get('pmid')
     response = core_logic.annotate(pmid)
     return jsonify(response)
+
+@search.route("/filterdate",methods=['POST'])
+def filterdate():
+    data_front_end = request.get_json() 
+    pmids = data_front_end.get('pmids')
+    filter_type = data_front_end.get('filter_type')
+    from_date = data_front_end.get('from_date')
+    to_date = data_front_end.get('to_date')
+    response = core_logic.filterByDate(pmids,filter_type,from_date,to_date)
+    return jsonify(response)

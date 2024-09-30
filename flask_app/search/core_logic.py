@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import *
 import re
 from sentence_transformers import SentenceTransformer
@@ -112,7 +113,7 @@ def extract_section(articles):
             print(data)    
             for key in data.keys():
               if data[key] != "":
-                temp[key] = data[key]          
+                temp[key] = data[key]
 
             temp["display"] = section_to_display(temp)
 
@@ -120,7 +121,7 @@ def extract_section(articles):
             results.append(temp)        
 
         return results
- 
+
 def create_session():
     session_id = str(uuid.uuid4())
     session[session_id] = {
@@ -136,7 +137,7 @@ def section_to_display(article):
         if current_length > max_length:
             max_length = current_length
             largest_section = section
-    return largest_section        
+    return largest_section
 
 def filter_type(query,filters):
     articles = get_data(query)
@@ -236,6 +237,60 @@ def merge_dict(data):
                     if flag == False:
                         merged_dict[annotate_type][k] = chunk_response[annotate_type][k]
     return merged_dict
+
+def filterByDate(pmids,filter_type,from_date,to_date):
+    today = datetime.today()
+    
+    if filter_type == "1 year":
+        date_from = today - timedelta(days=365)
+        date_to = today
+    elif filter_type == "5 years":
+        date_from = today - timedelta(days=5 * 365)
+        date_to = today
+    elif filter_type == "10 years":
+        date_from = today - timedelta(days=10 * 365)
+        date_to = today
+    elif filter_type == "Custom Range" and from_date and to_date:
+        date_from = datetime.strptime(from_date, "%d-%m-%Y")
+        date_to = datetime.strptime(from_date, "%d-%m-%Y")
+    else:
+        raise ValueError("Invalid filter type or custom dates not provided.")
+
+    filtered_articles = []
+    articles = client.get(
+        collection_name="vector_data_pmc",
+        ids=pmids
+    )  
+    # Iterate over each article in the JSON data
+    months = {
+        'Jan' : "01",
+        'Feb' : "02",
+        'Mar' : "03",
+        'Apr' : "04",
+        'May' : "05",
+        'Jun' : "06",
+        'Jul' : "07",
+        'Aug' : "08",
+        'Sep' : "09",
+        'Oct' : "10",
+        'Nov' : "11",
+        'Dec' : "12",
+
+     }
+    for article in articles:
+        article.pop('vector_data')
+        pub_date = article.get('publication_date', None)
+        pub_date = pub_date.split("-")
+        pub_date = str(pub_date[0]) + "-" + str(months[pub_date[1]]) +"-"+ str(pub_date[2])
+        if pub_date:
+            pub_date_dt = datetime.strptime(pub_date, "%d-%m-%Y")
+            if date_from <= pub_date_dt <= date_to:
+                filtered_articles.append(article)
+    response = {
+        "articles" : filtered_articles
+    }            
+    print(response)
+    return response
 
 # def dict_to_list(dictionary):
 #     data = []
