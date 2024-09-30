@@ -45,6 +45,7 @@ def get_data(query):
     articles = sorted(articles, key=lambda article: order_lookup[article['pmid']])
 
     for article in articles:
+        article['similarity_score'] = order_lookup[article['pmid']]
         article.pop('vector_data')
         
     response = {
