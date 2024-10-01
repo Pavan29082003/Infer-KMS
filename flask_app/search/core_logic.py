@@ -43,7 +43,7 @@ def get_data(query):
         ids=ids
     )
     order_lookup = {item['id']: item['score'] for item in relavent_articles}
-    articles = sorted(articles, key=lambda article: order_lookup[article['pmid']])
+    articles = sorted(articles, key=lambda article: order_lookup[article['pmid']], reverse=True)
 
     for article in articles:
         article['similarity_score'] = order_lookup[article['pmid']]
@@ -252,7 +252,7 @@ def filterByDate(pmids,filter_type,from_date,to_date):
         date_to = today
     elif filter_type == "Custom Range" and from_date and to_date:
         date_from = datetime.strptime(from_date, "%d-%m-%Y")
-        date_to = datetime.strptime(from_date, "%d-%m-%Y")
+        date_to = datetime.strptime(to_date, "%d-%m-%Y")
     else:
         raise ValueError("Invalid filter type or custom dates not provided.")
 
@@ -262,6 +262,8 @@ def filterByDate(pmids,filter_type,from_date,to_date):
         ids=pmids
     )  
     # Iterate over each article in the JSON data
+    print(date_from)
+    print(date_to)
     months = {
         'Jan' : "01",
         'Feb' : "02",
@@ -288,8 +290,8 @@ def filterByDate(pmids,filter_type,from_date,to_date):
                 filtered_articles.append(article)
     response = {
         "articles" : filtered_articles
-    }            
-    print(response)
+    }
+    # print(response)
     return response
 
 # def dict_to_list(dictionary):
