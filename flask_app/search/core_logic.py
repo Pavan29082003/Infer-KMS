@@ -19,12 +19,11 @@ vector_data_pmc = Collection(name="vector_data_pmc")
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 
-
 def get_data(query):
-    sbert_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+    sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
     query_embedding = sbert_model.encode([query])
     res = vector_data_pmc.search(
-         param={"metric_type": "L2", "params": {}} ,
+         param={"metric_type": "COSINE", "params": {}} ,
          data = query_embedding,
          anns_field="vector_data",
          limit=100
@@ -36,7 +35,7 @@ def get_data(query):
             temp['id'] = hit.id
             temp['score'] = hit.score
             relavent_articles.append(temp)
-    relavent_articles = sorted(relavent_articles, key=lambda x: x['id'])
+    relavent_articles = sorted(relavent_articles, key=lambda x: x['score'], reverse= True)
     ids = [article['id'] for article in relavent_articles]
     articles = client.get(
         collection_name="vector_data_pmc",
@@ -46,7 +45,7 @@ def get_data(query):
     articles = sorted(articles, key=lambda article: order_lookup[article['pmid']], reverse=True)
 
     for article in articles:
-        article['similarity_score'] = order_lookup[article['pmid']]
+        article['similarity_score'] = ( ( order_lookup[article['pmid']] + 1 ) / 2 ) * 100
         article.pop('vector_data')
         
     response = {
@@ -165,7 +164,7 @@ def annotate(pmids):
     response = []
     for article in articles:
         context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
-        chunk = len(context) // 4
+        chunk = len(context) // 20
         article_chunks = [context[i:i+chunk] for i in range(0,len(context),chunk)]
         threads = []
         for chunk in article_chunks:
@@ -213,12 +212,12 @@ def annotate_api_gemini(pmid,context,data):
         chat_session = model.start_chat()
         response = chat_session.send_message(prompt)
         temp = {}
-        print(response.text)
+        # print(response.text)
         response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
         data[pmid].append(response)
     except Exception as e:
-        print(e)
-        print("Response:" + str(response.text))    
+        print(e)  
+        print(data[pmid]) 
     return temp
 
 def merge_dict(data):
@@ -261,7 +260,6 @@ def filterByDate(pmids,filter_type,from_date,to_date):
         collection_name="vector_data_pmc",
         ids=pmids
     )  
-    # Iterate over each article in the JSON data
     print(date_from)
     print(date_to)
     months = {
@@ -291,25 +289,6 @@ def filterByDate(pmids,filter_type,from_date,to_date):
     response = {
         "articles" : filtered_articles
     }
-    # print(response)
+
     return response
 
-# def dict_to_list(dictionary):
-#     data = []
-#     for item in dictionary:
-#         temp = {}
-#         # print(dictionary[item])
-#         if isinstance(dictionary[item],dict):
-#             for key,value in dictionary[item].items():
-#                 temp['title'] = key
-#                 if isinstance(value,dict):
-#                     # print(value)
-#                     temp['content'] = dict_to_list(value)
-#                 else:
-#                     temp['content'] = value
-#                 data.append(temp)
-#         else:
-#             temp['title'] = item
-#             temp['content'] = dictionary[item]
-#             data.append(temp)        
-#     return data
