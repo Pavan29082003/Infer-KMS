@@ -15,37 +15,60 @@ ip =  os.environ['IP']
 client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_pmc = Collection(name="vector_data_pmc")
-
+vector_data_biorxiv = Collection(name="vector_data_biorxiv")
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 
 def get_data(query):
     sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
     query_embedding = sbert_model.encode([query])
-    res = vector_data_pmc.search(
+    res_pmc = vector_data_pmc.search(
          param={"metric_type": "COSINE", "params": {}} ,
          data = query_embedding,
          anns_field="vector_data",
          limit=100
-        )    
+        )
+    res_biorxiv = vector_data_biorxiv.search(
+         param={"metric_type": "COSINE", "params": {}} ,
+         data = query_embedding,
+         anns_field="vector_data",
+         limit=100
+        )              
     relavent_articles = []
-    for hits in res :
-        for hit in hits:
-            temp = {}
-            temp['id'] = hit.id
-            temp['score'] = hit.score
-            relavent_articles.append(temp)
+    for hits_pmc,hits_biorxiv in zip(res_pmc,res_biorxiv) :
+        for hit_pmc,hit_biorxiv in zip(hits_pmc,hits_biorxiv):
+            temp1 = {}
+            temp1['id'] = hit_pmc.id
+            temp1['score'] = hit_pmc.score
+            temp2 = {}
+            temp2['id'] = hit_biorxiv.id
+            print(hit_biorxiv.id)
+            temp2['score'] = hit_biorxiv.score            
+            relavent_articles.append(temp1)
+            relavent_articles.append(temp2)
     relavent_articles = sorted(relavent_articles, key=lambda x: x['score'], reverse= True)
     ids = [article['id'] for article in relavent_articles]
-    articles = client.get(
+    articles_pmc = client.get(
         collection_name="vector_data_pmc",
         ids=ids
     )
+    articles_biorxiv = client.get(
+        collection_name="vector_data_biorxiv",
+        ids=ids
+    )    
+    articles = []
+
+    for article_biorxiv, article_pmc in zip(articles_biorxiv, articles_pmc):
+        articles.append(article_biorxiv)
+        articles.append(article_pmc)
+    for article in articles:
+        print(type(article))
+
     order_lookup = {item['id']: item['score'] for item in relavent_articles}
-    articles = sorted(articles, key=lambda article: order_lookup[article['pmid']], reverse=True)
+    articles = sorted(articles, key=lambda article: order_lookup[article['pmid'] if article.get('pmid') else article.get("bioRxiv_id")], reverse=True)
 
     for article in articles:
-        article['similarity_score'] = ( ( order_lookup[article['pmid']] + 1 ) / 2 ) * 100
+        article['similarity_score'] = (  ( order_lookup[article['pmid'] if article.get('pmid') else article.get("bioRxiv_id")] + 1 ) / 2 ) * 100
         article.pop('vector_data')
         
     response = {
@@ -170,6 +193,7 @@ def annotate(pmids):
         for chunk in article_chunks:
             thread = threading.Thread(target=annotate_api_gemini, args=(article['pmid'],chunk,data))
             threads.append(thread)
+            thread.daemon = True
             thread.start()
         for thread in threads:
             thread.join()
