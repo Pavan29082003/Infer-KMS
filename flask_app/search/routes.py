@@ -30,8 +30,10 @@ def get_answer():
     data_front_end = request.get_json() 
     question = data_front_end.get('question')
     session_id = data_front_end.get('session_id')
+    source = data_front_end.get('source')
+    print(source)
     print(session_id)
-    pmid = data_front_end.get('pmid')
+    id = data_front_end.get('id')
 
     if question == "":
         response  = {
@@ -43,7 +45,7 @@ def get_answer():
                 print("No session id")
                 session_id = core_logic.create_session() 
 
-        return Response(stream_with_context(core_logic.answer_query(question,pmid,session_id)),content_type="application/json")
+        return Response(stream_with_context(core_logic.answer_query(question,id,session_id,source)),content_type="application/json")
           
     
 @search.route("/deletesession",methods=['POST'])
