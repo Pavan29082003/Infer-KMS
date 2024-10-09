@@ -80,7 +80,8 @@ def answer_query(question,id,session_id,source):
     context = ''
     collections  = {
         "pubmed" : "vector_data_pmc",
-        "biorxiv" : "vector_data_biorxiv"
+        "biorxiv" : "vector_data_biorxiv",
+        "plos": "vector_data_plos"
     }
     print(collections[source])
     if len(session[session_id]['history']) == 0:
@@ -199,8 +200,8 @@ def annotate(**sources_ids):
     response = []
     id_names = {
         "pubmed" : "pmid",
-        "BioRxiv" : "bioRxiv_id",
-        "Plos" : "plos_id"
+        "biorxiv" : "bioRxiv_id",
+        "plos" : "plos_id"
     }
     for article in articles:
         source = article['source'] if article.get('source') else "pubmed"
