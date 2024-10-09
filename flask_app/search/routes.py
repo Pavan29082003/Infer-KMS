@@ -62,8 +62,11 @@ def delete_session():
 @search.route("/annotate",methods=['POST'])
 def annotate():
     data_front_end = request.get_json() 
-    pmid = data_front_end.get('pmid')
-    response = core_logic.annotate(pmid)
+    # print(data_front_end)
+    pubmed = data_front_end.get('pmid')
+    biorxiv = data_front_end.get('biorxiv')
+    plos = data_front_end.get('plos')
+    response = core_logic.annotate(pubmed=data_front_end['pubmed'],biorxiv=data_front_end['biorxiv'])
     return jsonify(response)
 
 @search.route("/filterdate",methods=['POST'])
