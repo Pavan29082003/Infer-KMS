@@ -180,47 +180,60 @@ def filter_type(query,filters):
     }        
     return articles            
 
-def annotate(pmids):
-    articles = client.get(
-        collection_name="vector_data_pmc",
-        ids=pmids
-    )  
+def annotate(**sources_ids):
     data = {}
-    for pmid in pmids:
-        data[pmid] = []
+    collections  = {
+        "pubmed" : "vector_data_pmc",
+        "biorxiv" : "vector_data_biorxiv",
+        "plos" : "vector_data_plos"
+    }
+    articles = []
+    for source,ids in sources_ids.items():
+        articles = articles + client.get(
+            collection_name=collections[source],
+            ids=ids
+        )
+        for id in ids:
+            data[id] = []
     response = []
+    id_names = {
+        "pubmed" : "pmid",
+        "BioRxiv" : "bioRxiv_id",
+        "Plos" : "plos_id"
+    }
     for article in articles:
+        source = article['source'] if article.get('source') else "pubmed"
         context = json.dumps(article['abstract_content']) + "\n\n" + json.dumps(article['body_content']) 
         chunk = len(context) // 20
         article_chunks = [context[i:i+chunk] for i in range(0,len(context),chunk)]
         threads = []
         for chunk in article_chunks:
-            thread = threading.Thread(target=annotate_api_gemini, args=(article['pmid'],chunk,data))
+            thread = threading.Thread(target=annotate_api_gemini, args=(article[id_names[source]],chunk,data))
             threads.append(thread)
             thread.daemon = True
             thread.start()
         for thread in threads:
             thread.join()
-    for pmid in data.keys():
+    for id in data.keys():
         total_count = 0
-        data[pmid] = merge_dict(data[pmid])
-        if len(data[pmid]) > 0:
-            for i in data[pmid].keys():
+        data[id] = merge_dict(data[id])
+        if len(data[id]) > 0:
+            for i in data[id].keys():
                 # print(i)
-                values = sum(list(data[pmid][i].values()))
+                values = sum(list(data[id][i].values()))
                 total_count = total_count + values
             empty_fields = []    
-            for j in data[pmid].keys():
-                if len(data[pmid][j]) > 0:
-                    data[pmid][j]['annotation_score'] = ( sum(list(data[pmid][j].values())) / total_count ) * 100
+            for j in data[id].keys():
+                if len(data[id][j]) > 0:
+                    data[id][j]['annotation_score'] = ( sum(list(data[id][j].values())) / total_count ) * 100
                 else:
                     empty_fields.append(j)
             for k in empty_fields:
-                del data[pmid][k]       
-        response.append({pmid:data[pmid]})    
+                del data[id][k]       
+        response.append({id:data[id]})    
     return response
 
-def annotate_api_gemini(pmid,context,data):
+def annotate_api_gemini(id,context,data):
     try: 
         generation_config = {
         "temperature": 0,
@@ -242,10 +255,10 @@ def annotate_api_gemini(pmid,context,data):
         temp = {}
         # print(response.text)
         response = json.loads(response.text.replace("```json","").replace("```","").replace("'",'"'))
-        data[pmid].append(response)
+        data[id].append(response)
     except Exception as e:
         print(e)  
-        print(data[pmid]) 
+        print(data[id]) 
     return temp
 
 def merge_dict(data):
