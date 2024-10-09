@@ -189,12 +189,13 @@ def annotate(**sources_ids):
     }
     articles = []
     for source,ids in sources_ids.items():
-        articles = articles + client.get(
-            collection_name=collections[source],
-            ids=ids
-        )
-        for id in ids:
-            data[id] = []
+        if ids:
+            articles = articles + client.get(
+                collection_name=collections[source],
+                ids=ids
+            )
+            for id in ids:
+                data[id] = []
     response = []
     id_names = {
         "pubmed" : "pmid",
