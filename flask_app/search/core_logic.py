@@ -16,6 +16,7 @@ client = MilvusClient(uri="http://" + ip + ":19530")
 connections.connect(host=ip, port="19530")
 vector_data_pmc = Collection(name="vector_data_pmc")
 vector_data_biorxiv = Collection(name="vector_data_biorxiv")
+vector_data_plos = Collection(name="vector_data_plos")
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 
@@ -33,19 +34,28 @@ def get_data(query):
          data = query_embedding,
          anns_field="vector_data",
          limit=100
-        )              
+        )         
+    res_plos = vector_data_plos.search(
+         param={"metric_type": "COSINE", "params": {}} ,
+         data = query_embedding,
+         anns_field="vector_data",
+         limit=100
+        )          
     relavent_articles = []
-    for hits_pmc,hits_biorxiv in zip(res_pmc,res_biorxiv) :
-        for hit_pmc,hit_biorxiv in zip(hits_pmc,hits_biorxiv):
+    for hits_pmc,hits_biorxiv,hits_plos in zip(res_pmc,res_biorxiv,res_plos) :
+        for hit_pmc,hit_biorxiv,hit_plos in zip(hits_pmc,hits_biorxiv,hits_plos):
             temp1 = {}
             temp1['id'] = hit_pmc.id
             temp1['score'] = hit_pmc.score
             temp2 = {}
             temp2['id'] = hit_biorxiv.id
-            print(hit_biorxiv.id)
-            temp2['score'] = hit_biorxiv.score            
+            temp2['score'] = hit_biorxiv.score 
+            temp3 = {}
+            temp3['score'] = hit_plos.score       
+            temp3['id'] = hit_plos.id         
             relavent_articles.append(temp1)
             relavent_articles.append(temp2)
+            relavent_articles.append(temp3)
     relavent_articles = sorted(relavent_articles, key=lambda x: x['score'], reverse= True)
     ids = [article['id'] for article in relavent_articles]
     articles_pmc = client.get(
@@ -55,20 +65,29 @@ def get_data(query):
     articles_biorxiv = client.get(
         collection_name="vector_data_biorxiv",
         ids=ids
-    )    
+    )   
+    articles_plos = client.get(
+        collection_name="vector_data_plos",
+        ids=ids
+    )      
     articles = []
 
-    for article_biorxiv, article_pmc in zip(articles_biorxiv, articles_pmc):
+    for article_biorxiv, article_pmc, articles_plos in zip(articles_biorxiv, articles_pmc, articles_plos):
         articles.append(article_biorxiv)
         articles.append(article_pmc)
+        articles.append(articles_plos)
     for article in articles:
         print(type(article))
-
+    id_names = {
+        "pubmed" : "pmid",
+        "BioRxiv" : "bioRxiv_id",
+        "Public Library of Science (PLOS)" : "plos_id"
+    }
     order_lookup = {item['id']: item['score'] for item in relavent_articles}
-    articles = sorted(articles, key=lambda article: order_lookup[article['pmid'] if article.get('pmid') else article.get("bioRxiv_id")], reverse=True)
+    articles = sorted(articles, key=lambda article: order_lookup[article['pmid'] if article.get('pmid') else article[id_names[article['source']]]], reverse=True)
 
     for article in articles:
-        article['similarity_score'] = (  ( order_lookup[article['pmid'] if article.get('pmid') else article.get("bioRxiv_id")] + 1 ) / 2 ) * 100
+        article['similarity_score'] = (  ( order_lookup[article['pmid'] if article.get('pmid') else article[id_names[article['source']]]] + 1 ) / 2 ) * 100
         article.pop('vector_data')
         
     response = {
@@ -200,8 +219,8 @@ def annotate(**sources_ids):
     response = []
     id_names = {
         "pubmed" : "pmid",
-        "biorxiv" : "bioRxiv_id",
-        "plos" : "plos_id"
+        "BioRxiv" : "bioRxiv_id",
+        "Public Library of Science (PLOS)" : "plos_id"
     }
     for article in articles:
         source = article['source'] if article.get('source') else "pubmed"
