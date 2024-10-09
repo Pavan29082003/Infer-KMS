@@ -76,15 +76,19 @@ def get_data(query):
     }
     return response
 
-def answer_query(question,pmid,session_id):
+def answer_query(question,id,session_id,source):
     context = ''
+    collections  = {
+        "pubmed" : "vector_data_pmc",
+        "biorxiv" : "vector_data_biorxiv"
+    }
+    print(collections[source])
     if len(session[session_id]['history']) == 0:
         article = client.get(
-        collection_name="vector_data_pmc",
-        ids=[pmid]
+        collection_name=collections[source],
+        ids=[id]
         )  
-        context = json.dumps(article[0]['body_content']) 
-        context = context
+        context = json.dumps(article[0]['body_content'])  + json.dumps(article[0]['abstract_content'])
     prompt = context +"\n\n" +  question
     generation_config = {
         "temperature": 0.5,
