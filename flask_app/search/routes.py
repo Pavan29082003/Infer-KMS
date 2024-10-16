@@ -68,9 +68,11 @@ def annotate():
 @search.route("/filterdate",methods=['POST'])
 def filterdate():
     data_front_end = request.get_json() 
-    pmids = data_front_end.get('pmids')
+    pubmed_articles = data_front_end.get('pubmed_articles')
+    biorxiv_articles = data_front_end.get('biorxiv_articles')
+    plos_articles = data_front_end.get('plos_articles')
     filter_type = data_front_end.get('filter_type')
     from_date = data_front_end.get('from_date')
     to_date = data_front_end.get('to_date')
-    response = core_logic.filterByDate(pmids,filter_type,from_date,to_date)
+    response = core_logic.filterByDate(pubmed_articles,biorxiv_articles,plos_articles,filter_type,from_date,to_date)
     return jsonify(response)
