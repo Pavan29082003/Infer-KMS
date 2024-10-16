@@ -299,7 +299,7 @@ def merge_dict(data):
                         merged_dict[annotate_type][k] = chunk_response[annotate_type][k]
     return merged_dict
 
-def filterByDate(pmids,filter_type,from_date,to_date):
+def filterByDate(pubmed_ids,biorxiv_ids,plos_ids,filter_type,from_date,to_date):
     today = datetime.today()
     
     if filter_type == "1 year":
@@ -318,10 +318,18 @@ def filterByDate(pmids,filter_type,from_date,to_date):
         raise ValueError("Invalid filter type or custom dates not provided.")
 
     filtered_articles = []
-    articles = client.get(
+    articles_pmc = client.get(
         collection_name="vector_data_pmc",
-        ids=pmids
+        ids=pubmed_ids
     )  
+    articles_biorxiv = client.get(
+        collection_name="vector_data_biorxiv",
+        ids=biorxiv_ids
+    )  
+    articles_plos = client.get(
+        collection_name="vector_data_plos",
+        ids=plos_ids
+    )          
     print(date_from)
     print(date_to)
     months = {
@@ -339,15 +347,38 @@ def filterByDate(pmids,filter_type,from_date,to_date):
         'Dec' : "12",
 
      }
-    for article in articles:
-        article.pop('vector_data')
-        pub_date = article.get('publication_date', None)
-        pub_date = pub_date.split("-")
-        pub_date = str(pub_date[0]) + "-" + str(months[pub_date[1]]) +"-"+ str(pub_date[2])
-        if pub_date:
-            pub_date_dt = datetime.strptime(pub_date, "%d-%m-%Y")
-            if date_from <= pub_date_dt <= date_to:
-                filtered_articles.append(article)
+    for article_pmc in articles_pmc:
+        article_pmc.pop('vector_data')
+        article_pmc_pub_date = article_pmc.get('publication_date', None)
+        article_pmc_pub_date = article_pmc_pub_date.split("-")
+        article_pmc_pub_date = str(article_pmc_pub_date[0]) + "-" + str(months[article_pmc_pub_date[1]]) +"-"+ str(article_pmc_pub_date[2])
+
+        if article_pmc_pub_date:
+            article_pmc_pub_date = datetime.strptime(article_pmc_pub_date, "%d-%m-%Y")
+            if date_from <= article_pmc_pub_date <= date_to:
+                filtered_articles.append(article_pmc)
+
+    for article_biorxiv in articles_biorxiv:
+        article_biorxiv.pop('vector_data')
+        article_biorxiv_pub_date = article_biorxiv.get('publication_date', None)
+        article_biorxiv_pub_date = article_biorxiv_pub_date.split("-")
+        article_biorxiv_pub_date = str(article_biorxiv_pub_date[0]) + "-" + str(months[article_biorxiv_pub_date[1]]) +"-"+ str(article_biorxiv_pub_date[2])
+    
+        if article_biorxiv_pub_date:
+            article_biorxiv_pub_date = datetime.strptime(article_biorxiv_pub_date, "%d-%m-%Y")
+            if date_from <= article_biorxiv_pub_date <= date_to:
+                filtered_articles.append(article_biorxiv)
+        
+    for article_plos in articles_plos:
+        article_plos.pop('vector_data')
+        article_plos_pub_date = article_plos.get('publication_date', None)
+        article_plos_pub_date = article_plos_pub_date.split("-")        
+        article_plos_pub_date = str(article_plos_pub_date[0]) + "-" + str(months[article_plos_pub_date[1]]) +"-"+ str(article_plos_pub_date[2])
+
+        if article_plos_pub_date:
+            article_plos_pub_date = datetime.strptime(article_plos_pub_date, "%d-%m-%Y")
+            if date_from <= article_plos_pub_date <= date_to:
+                filtered_articles.append(article_plos)                                                 
     response = {
         "articles" : filtered_articles
     }
